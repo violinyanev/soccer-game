@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}🛠 Admin — WC 2026 Predictor{% endblock %}
+
+{% block content %}
+
+<h2 style="margin-bottom:0.5rem;">🛠 Admin Panel</h2>
+
+{% if message %}
+<div class="flash info">{{ message }}</div>
+{% endif %}
+
+<!-- Manual Sync -->
+<div class="card">
+  <h3 style="margin-bottom:0.5rem;">🔄 Sync Matches</h3>
+  <p style="color:#555; margin-bottom:1rem; font-size:0.9rem;">
+    Matches are synced automatically every 30 minutes from football-data.org.
+    Click below to trigger an immediate sync.
+  </p>
+  <form method="post" action="/admin/sync">
+    <button type="submit" style="background:#1a6e3c; border-color:#1a6e3c; color:#fff; padding:0.5rem 1.25rem; border-radius:6px; cursor:pointer; font-size:0.95rem;">
+      ⚡ Sync Now
+    </button>
+  </form>
+</div>
+
+<!-- Manual Match Add/Edit -->
+<div class="card">
+  <h3 style="margin-bottom:0.5rem;">➕ Add / Edit a Match</h3>
+  <p style="color:#555; margin-bottom:1rem; font-size:0.9rem;">
+    Use this to manually add a match or override data that the API doesn't provide yet.
+    Enter a DB ID to update an existing match, or leave it blank to create a new one.
+  </p>
+  <form method="post" action="/admin/match">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">DB ID (leave blank to add new)</label>
+        <input type="number" name="match_id" placeholder="e.g. 42" min="1" />
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">External ID (football-data.org ID) *</label>
+        <input type="number" name="external_id" placeholder="e.g. 481234" required />
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">Home Team *</label>
+        <input type="text" name="home_team" placeholder="e.g. Brazil" required />
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">Away Team *</label>
+        <input type="text" name="away_team" placeholder="e.g. Argentina" required />
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">Match Date/Time (local ISO) *</label>
+        <input type="datetime-local" name="match_datetime" required />
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">Status</label>
+        <select name="status">
+          <option value="SCHEDULED">SCHEDULED</option>
+          <option value="IN_PLAY">IN_PLAY</option>
+          <option value="FINISHED">FINISHED</option>
+          <option value="POSTPONED">POSTPONED</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">Home Score</label>
+        <input type="number" name="home_score" placeholder="e.g. 2" min="0" />
+      </div>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">Away Score</label>
+        <input type="number" name="away_score" placeholder="e.g. 1" min="0" />
+      </div>
+    </div>
+    <button type="submit" style="margin-top:1rem; background:#1a6e3c; border-color:#1a6e3c; color:#fff; padding:0.5rem 1.25rem; border-radius:6px; cursor:pointer;">
+      💾 Save Match
+    </button>
+  </form>
+</div>
+
+<!-- Match List -->
+<div class="card" style="padding:0; overflow:hidden;">
+  <div style="padding:1rem 1.25rem 0.5rem; display:flex; justify-content:space-between; align-items:center;">
+    <h3 style="margin:0;">📋 All Matches ({{ matches|length }})</h3>
+  </div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+      <thead>
+        <tr style="background:#1a6e3c; color:#fff;">
+          <th style="padding:0.5rem 0.75rem; text-align:left;">ID</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Ext ID</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Home</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Away</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Date/Time (UTC)</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Status</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Score</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in matches %}
+        <tr style="{% if loop.index is even %}background:#f4f8f6;{% endif %}">
+          <td style="padding:0.45rem 0.75rem;">{{ m.id }}</td>
+          <td style="padding:0.45rem 0.75rem; color:#888;">{{ m.external_id }}</td>
+          <td style="padding:0.45rem 0.75rem;">{{ m.home_team }}</td>
+          <td style="padding:0.45rem 0.75rem;">{{ m.away_team }}</td>
+          <td style="padding:0.45rem 0.75rem; white-space:nowrap;">{{ m.match_datetime.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td style="padding:0.45rem 0.75rem;">
+            {% if m.status == "SCHEDULED" %}
+              <span class="badge badge-scheduled">{{ m.status }}</span>
+            {% elif m.status == "IN_PLAY" %}
+              <span class="badge badge-in-play">{{ m.status }}</span>
+            {% elif m.status == "FINISHED" %}
+              <span class="badge badge-finished">{{ m.status }}</span>
+            {% else %}
+              <span class="badge badge-postponed">{{ m.status }}</span>
+            {% endif %}
+          </td>
+          <td style="padding:0.45rem 0.75rem;">
+            {% if m.home_score is not none %}{{ m.home_score }} – {{ m.away_score }}{% else %}—{% endif %}
+          </td>
+          <td style="padding:0.45rem 0.75rem; font-weight:600;">
+            {% if m.result %}{{ m.result }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="padding:1rem; text-align:center; color:#888;">
+            No matches in the database. Trigger a sync or add one manually.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

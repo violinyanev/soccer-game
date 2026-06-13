@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}⚽ Dashboard — WC 2026 Predictor{% endblock %}
+
+{% block content %}
+
+<h2 style="margin-bottom:0.25rem;">🏟️ Match Predictions</h2>
+<p style="color:#555; margin-bottom:1.5rem;">
+  Pick <strong>Home win (H)</strong>, <strong>Draw (D)</strong>, or <strong>Away win (A)</strong>
+  for each upcoming match. You can change your pick any time before kick-off.
+</p>
+
+{% if not match_groups %}
+<div class="card" style="text-align:center; color:#666;">
+  <p style="font-size:1.5rem; margin-bottom:0.5rem;">📭</p>
+  <p>No matches loaded yet. The admin can trigger a sync from the
+    {% if user.is_admin %}<a href="/admin">Admin page</a>{% else %}Admin page{% endif %}.
+  </p>
+</div>
+{% endif %}
+
+{% for date, entries in match_groups %}
+<h3 style="margin-top:1.75rem; margin-bottom:0.75rem; color:#1a6e3c; border-bottom:2px solid #e8f5ee; padding-bottom:0.35rem;">
+  📅 {{ date }}
+</h3>
+
+{% for entry in entries %}
+{% set m = entry.match %}
+{% set pred = entry.prediction %}
+{% set can_predict = entry.can_predict %}
+
+<div class="card" style="margin-bottom:0.75rem;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem; flex-wrap:wrap;">
+    <div>
+      <strong style="font-size:1.05rem;">{{ m.home_team }} vs {{ m.away_team }}</strong>
+      <br/>
+      <small style="color:#777;">
+        🕐 {{ m.match_datetime.strftime("%H:%M UTC") }}
+        &nbsp;·&nbsp;
+        {% if m.status == "SCHEDULED" %}
+          <span class="badge badge-scheduled">Scheduled</span>
+        {% elif m.status == "IN_PLAY" %}
+          <span class="badge badge-in-play">🔴 Live</span>
+        {% elif m.status == "FINISHED" %}
+          <span class="badge badge-finished">Finished</span>
+        {% else %}
+          <span class="badge badge-postponed">{{ m.status }}</span>
+        {% endif %}
+      </small>
+    </div>
+
+    {# Score for finished / in-play matches #}
+    {% if m.status in ["FINISHED", "IN_PLAY"] and m.home_score is not none %}
+    <div style="font-size:1.4rem; font-weight:700; color:#1a6e3c; white-space:nowrap;">
+      {{ m.home_score }} – {{ m.away_score }}
+    </div>
+    {% endif %}
+  </div>
+
+  {# Prediction row #}
+  {% if can_predict %}
+    {# SCHEDULED: show interactive form #}
+    <form method="post" action="/predictions" style="margin-top:0.75rem;">
+      <input type="hidden" name="match_id" value="{{ m.id }}" />
+      <div class="pred-row">
+        <label class="pred-label">
+          <input type="radio" name="predicted_result" value="H"
+            {% if pred and pred.predicted_result == "H" %}checked{% endif %} />
+          🏠 {{ m.home_team }}
+        </label>
+        <label class="pred-label">
+          <input type="radio" name="predicted_result" value="D"
+            {% if pred and pred.predicted_result == "D" %}checked{% endif %} />
+          🤝 Draw
+        </label>
+        <label class="pred-label">
+          <input type="radio" name="predicted_result" value="A"
+            {% if pred and pred.predicted_result == "A" %}checked{% endif %} />
+          ✈️ {{ m.away_team }}
+        </label>
+        <button type="submit" style="padding:0.35rem 1rem; font-size:0.9rem; background:#1a6e3c; border-color:#1a6e3c; color:#fff; border-radius:6px; cursor:pointer;">
+          {% if pred %}Update{% else %}Predict{% endif %}
+        </button>
+      </div>
+    </form>
+
+  {% else %}
+    {# Locked — show read-only selection #}
+    <div class="pred-row" style="margin-top:0.75rem;">
+      {% set result_label = {"H": m.home_team, "D": "Draw", "A": m.away_team} %}
+      {% set result_emoji = {"H": "🏠", "D": "🤝", "A": "✈️"} %}
+
+      {% for val in ["H", "D", "A"] %}
+        {% set is_user_pick = pred and pred.predicted_result == val %}
+        {% set is_actual    = m.result == val %}
+        <span class="pred-label locked {% if is_user_pick %}selected{% endif %}"
+              style="{% if is_actual and m.status == 'FINISHED' %}border-color:#0a3622; background:#d1e7dd;{% endif %}">
+          {{ result_emoji[val] }}
+          {% if val == "H" %}{{ m.home_team }}{% elif val == "D" %}Draw{% else %}{{ m.away_team }}{% endif %}
+          {% if is_user_pick %}✓{% endif %}
+        </span>
+      {% endfor %}
+
+      {# Points chip #}
+      {% if pred %}
+        {% if pred.points_awarded is not none %}
+          {% if pred.points_awarded > 0 %}
+            <span class="points-chip earned">+{{ pred.points_awarded }} pts ⭐</span>
+          {% else %}
+            <span class="points-chip zero">+0 pts</span>
+          {% endif %}
+        {% else %}
+          <span class="points-chip pending">Pending</span>
+        {% endif %}
+      {% else %}
+        <span style="color:#999; font-size:0.85rem;">No prediction made</span>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+{% endfor %}
+{% endfor %}
+
+<script>
+  // Auto-submit prediction form when radio changes
+  document.querySelectorAll('.pred-row input[type=radio]').forEach(radio => {
+    radio.addEventListener('change', () => radio.closest('form').submit());
+  });
+</script>
+
+{% endblock %}

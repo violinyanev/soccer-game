@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}🏆 Leaderboard — WC 2026 Predictor{% endblock %}
+
+{% block content %}
+
+<h2 style="margin-bottom:1.25rem;">🏆 Leaderboard</h2>
+
+<div class="card" style="padding:0; overflow:hidden;">
+  <table class="leaderboard">
+    <thead>
+      <tr>
+        <th style="width:3rem;">#</th>
+        <th>Player</th>
+        <th style="text-align:right;">Correct</th>
+        <th style="text-align:right;">Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr {% if row.username == user.sub %}style="background:#e8f5ee !important; font-weight:600;"{% endif %}>
+        <td>
+          {% if loop.index == 1 %}
+            <span class="rank-medal">🥇</span>
+          {% elif loop.index == 2 %}
+            <span class="rank-medal">🥈</span>
+          {% elif loop.index == 3 %}
+            <span class="rank-medal">🥉</span>
+          {% else %}
+            {{ loop.index }}
+          {% endif %}
+        </td>
+        <td>
+          {{ row.username }}
+          {% if row.username == user.sub %}<small style="color:#1a6e3c;">(you)</small>{% endif %}
+        </td>
+        <td style="text-align:right;">{{ row.correct_predictions }}</td>
+        <td style="text-align:right; font-size:1.05rem;">
+          <strong>{{ row.total_points }}</strong>
+          <small style="color:#888;">pts</small>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" style="text-align:center; color:#888;">No scores yet — predictions are pending!</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p style="color:#888; font-size:0.85rem; margin-top:0.75rem; text-align:center;">
+  5 points for a correct winner/draw prediction · 0 for wrong
+</p>
+
+{% endblock %}
