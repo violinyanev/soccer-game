@@ -12,6 +12,10 @@ class User(Base):
     username = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=True)  # None = not yet set
     is_admin = Column(Boolean, default=False, nullable=False)
+    # Filename of the admin-uploaded avatar, relative to the avatars dir.
+    avatar_filename = Column(String, nullable=True)
+    # Shown the one-time welcome screen yet?
+    has_seen_welcome = Column(Boolean, default=False, nullable=False)
 
     predictions = relationship("Prediction", back_populates="user")
 

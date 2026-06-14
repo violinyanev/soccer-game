@@ -1,15 +1,25 @@
+import os
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, case
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
-from database import get_db
+from database import get_db, AVATAR_DIR
 from football_api import score_prediction, sync_matches
 from models import Match, Prediction, User
+
+# Accepted avatar uploads: content-type -> file extension.
+ALLOWED_IMAGE_TYPES = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+MAX_AVATAR_BYTES = 5 * 1024 * 1024  # 5 MB
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -82,7 +92,9 @@ async def admin_get(request: Request, db: Session = Depends(get_db)):
     users = db.query(User).order_by(User.username).all()
     participation = [
         {
+            "user_id": u.id,
             "username": u.username,
+            "avatar": u.avatar_filename,
             "predictions": total_counts.get(u.id, 0),
             "open_remaining": scheduled_count - open_counts.get(u.id, 0),
         }
@@ -201,3 +213,47 @@ async def admin_upsert_match(
 
     db.commit()
     return RedirectResponse("/admin?message=Match+saved+successfully", status_code=302)
+
+
+@router.post("/admin/avatar")
+async def admin_upload_avatar(
+    request: Request,
+    user_id: int = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    admin = _require_admin(request)
+    if not admin:
+        return RedirectResponse("/dashboard", status_code=302)
+
+    ext = ALLOWED_IMAGE_TYPES.get(file.content_type)
+    if not ext:
+        return RedirectResponse(
+            "/admin?message=Unsupported+image+type+(use+PNG,+JPG,+WEBP+or+GIF)",
+            status_code=302,
+        )
+
+    data = await file.read()
+    if len(data) > MAX_AVATAR_BYTES:
+        return RedirectResponse("/admin?message=Image+too+large+(max+5+MB)", status_code=302)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return RedirectResponse("/admin?message=Unknown+user", status_code=302)
+
+    os.makedirs(AVATAR_DIR, exist_ok=True)
+    # Remove any previous avatar for this user (extension may differ).
+    for old in ALLOWED_IMAGE_TYPES.values():
+        prev = os.path.join(AVATAR_DIR, f"{user_id}{old}")
+        if os.path.exists(prev):
+            os.remove(prev)
+
+    filename = f"{user_id}{ext}"
+    with open(os.path.join(AVATAR_DIR, filename), "wb") as fh:
+        fh.write(data)
+
+    user.avatar_filename = filename
+    db.commit()
+    return RedirectResponse(
+        f"/admin?message=Picture+updated+for+{user.username}", status_code=302
+    )

@@ -6,11 +6,12 @@ A self-hosted web app for family members to predict 2026 FIFA World Cup match ou
 
 - 8 predefined family accounts — no self-registration
 - First login sets your own password; subsequent logins use it
+- One-time welcome screen (in Bulgarian) with the player's photo on first login
 - Predict the exact score of each match
-- Live scoreboard, grouped by date
+- Live scoreboard, grouped by date; past matches collapse behind a toggle
 - Graded scoring: 3 pts exact score, 2 pts correct goal difference, 1 pt correct winner/draw, 0 otherwise
 - Auto-syncs matches and results from football-data.org every 30 minutes
-- Admin panel for manual sync and match overrides
+- Admin panel for manual sync, match overrides, prediction tracking, and per-player photo uploads
 
 ## Prerequisites
 

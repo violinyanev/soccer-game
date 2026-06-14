@@ -14,16 +14,7 @@
   <strong>1 pt</strong> correct winner/draw · <strong>0</strong> otherwise.
 </p>
 
-{% if not match_groups %}
-<div class="card" style="text-align:center; color:#666;">
-  <p style="font-size:1.5rem; margin-bottom:0.5rem;">📭</p>
-  <p>No matches loaded yet. The admin can trigger a sync from the
-    {% if user.is_admin %}<a href="/admin">Admin page</a>{% else %}Admin page{% endif %}.
-  </p>
-</div>
-{% endif %}
-
-{% for date, entries in match_groups %}
+{% macro render_group(date, entries) %}
 <h3 style="margin-top:1.75rem; margin-bottom:0.75rem; color:#1a6e3c; border-bottom:2px solid #e8f5ee; padding-bottom:0.35rem;">
   📅 {{ date }}
 </h3>
@@ -105,6 +96,35 @@
 
 </div>
 {% endfor %}
+{% endmacro %}
+
+{% if not upcoming_groups and not past_groups %}
+<div class="card" style="text-align:center; color:#666;">
+  <p style="font-size:1.5rem; margin-bottom:0.5rem;">📭</p>
+  <p>No matches loaded yet. The admin can trigger a sync from the
+    {% if user.is_admin %}<a href="/admin">Admin page</a>{% else %}Admin page{% endif %}.
+  </p>
+</div>
+{% endif %}
+
+{# Upcoming / current matches #}
+{% for date, entries in upcoming_groups %}
+  {{ render_group(date, entries) }}
 {% endfor %}
+
+{# Past matches — collapsed behind a toggle #}
+{% if past_groups %}
+<details style="margin-top:1.75rem;">
+  <summary style="cursor:pointer; padding:0.6rem 1rem; background:#e8f5ee; color:#1a6e3c;
+                  border-radius:8px; font-weight:600; list-style:none; user-select:none;">
+    🗂️ Past matches ({{ past_match_count }}) — click to show / hide
+  </summary>
+  <div style="margin-top:1rem;">
+    {% for date, entries in past_groups %}
+      {{ render_group(date, entries) }}
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
 
 {% endblock %}

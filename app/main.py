@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
-from database import init_db, SessionLocal
+from database import init_db, SessionLocal, AVATAR_DIR
 from football_api import sync_matches
 from models import User
 from routers import auth as auth_router
@@ -59,6 +59,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 @app.on_event("startup")
 async def startup_event():
     os.makedirs("/app/data", exist_ok=True)
+    os.makedirs(AVATAR_DIR, exist_ok=True)
     init_db()
     seed_users()
 

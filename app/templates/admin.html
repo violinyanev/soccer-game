@@ -26,25 +26,36 @@
 <!-- Player Participation -->
 <div class="card" style="padding:0; overflow:hidden;">
   <div style="padding:1rem 1.25rem 0.5rem;">
-    <h3 style="margin:0;">👥 Player Predictions</h3>
+    <h3 style="margin:0;">👥 Players &amp; Predictions</h3>
     <p style="color:#555; margin:0.35rem 0 0; font-size:0.9rem;">
       Who has voted so far — {{ scheduled_count }} match{{ "es" if scheduled_count != 1 else "" }}
       still open for predictions. (Actual picks are hidden to avoid spoilers.)
+      Upload a picture for each player — it greets them on their first login.
     </p>
   </div>
   <div style="overflow-x:auto;">
     <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
       <thead>
         <tr style="background:#1a6e3c; color:#fff;">
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Pic</th>
           <th style="padding:0.5rem 0.75rem; text-align:left;">Player</th>
-          <th style="padding:0.5rem 0.75rem; text-align:right;">Predictions made</th>
-          <th style="padding:0.5rem 0.75rem; text-align:right;">Open matches left</th>
+          <th style="padding:0.5rem 0.75rem; text-align:right;">Predictions</th>
+          <th style="padding:0.5rem 0.75rem; text-align:right;">Open left</th>
           <th style="padding:0.5rem 0.75rem; text-align:left;">Status</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Picture</th>
         </tr>
       </thead>
       <tbody>
         {% for p in participation %}
         <tr style="{% if loop.index is even %}background:#f4f8f6;{% endif %}">
+          <td style="padding:0.35rem 0.75rem;">
+            {% if p.avatar %}
+              <img src="/avatar/{{ p.user_id }}" alt="{{ p.username }}"
+                   style="width:34px; height:34px; border-radius:50%; object-fit:cover; display:block;" />
+            {% else %}
+              <span style="font-size:1.3rem;">⚽</span>
+            {% endif %}
+          </td>
           <td style="padding:0.45rem 0.75rem;">{{ p.username }}</td>
           <td style="padding:0.45rem 0.75rem; text-align:right;">{{ p.predictions }}</td>
           <td style="padding:0.45rem 0.75rem; text-align:right;">{{ p.open_remaining }}</td>
@@ -56,6 +67,17 @@
             {% else %}
               <span class="points-chip pending">{{ p.open_remaining }} to go</span>
             {% endif %}
+          </td>
+          <td style="padding:0.45rem 0.75rem;">
+            <form method="post" action="/admin/avatar" enctype="multipart/form-data"
+                  style="margin:0; display:flex; gap:0.4rem; align-items:center;">
+              <input type="hidden" name="user_id" value="{{ p.user_id }}" />
+              <input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif"
+                     required style="font-size:0.8rem; max-width:170px;" />
+              <button type="submit" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#1a6e3c; border-color:#1a6e3c; color:#fff; border-radius:5px; cursor:pointer;">
+                {% if p.avatar %}Replace{% else %}Upload{% endif %}
+              </button>
+            </form>
           </td>
         </tr>
         {% endfor %}

@@ -5,6 +5,11 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 DB_PATH = os.getenv("DB_PATH", "/app/data/db.sqlite")
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
+# Where admin-uploaded participant avatars are stored (alongside the DB, so the
+# same bind mount persists and gets backed up).
+DATA_DIR = os.path.dirname(DB_PATH) or "/app/data"
+AVATAR_DIR = os.path.join(DATA_DIR, "avatars")
+
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},
@@ -37,8 +42,16 @@ def _migrate():
     the first deploy by hand. Safe to run on every startup.
     """
     with engine.begin() as conn:
-        cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(predictions)")}
-        if "predicted_home" not in cols:
+        pred_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(predictions)")}
+        if "predicted_home" not in pred_cols:
             conn.exec_driver_sql("ALTER TABLE predictions ADD COLUMN predicted_home INTEGER")
-        if "predicted_away" not in cols:
+        if "predicted_away" not in pred_cols:
             conn.exec_driver_sql("ALTER TABLE predictions ADD COLUMN predicted_away INTEGER")
+
+        user_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)")}
+        if "avatar_filename" not in user_cols:
+            conn.exec_driver_sql("ALTER TABLE users ADD COLUMN avatar_filename VARCHAR")
+        if "has_seen_welcome" not in user_cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE users ADD COLUMN has_seen_welcome BOOLEAN NOT NULL DEFAULT 0"
+            )
