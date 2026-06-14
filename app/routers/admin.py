@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from football_api import sync_matches
+from football_api import score_prediction, sync_matches
 from models import Match, Prediction, User
 
 router = APIRouter()
@@ -163,7 +163,9 @@ async def admin_upsert_match(
             .all()
         )
         for pred in preds:
-            pred.points_awarded = 5 if pred.predicted_result == result else 0
+            pred.points_awarded = score_prediction(
+                pred.predicted_home, pred.predicted_away, hs, aws
+            )
 
     db.commit()
     return RedirectResponse("/admin?message=Match+saved+successfully", status_code=302)

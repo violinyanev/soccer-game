@@ -6,9 +6,9 @@ A self-hosted web app for family members to predict 2026 FIFA World Cup match ou
 
 - 8 predefined family accounts — no self-registration
 - First login sets your own password; subsequent logins use it
-- Predict Home win / Draw / Away win for each match
+- Predict the exact score of each match
 - Live scoreboard, grouped by date
-- 5 points for a correct prediction, 0 for wrong
+- Graded scoring: 3 pts exact score, 2 pts correct goal difference, 1 pt correct winner/draw, 0 otherwise
 - Auto-syncs matches and results from football-data.org every 30 minutes
 - Admin panel for manual sync and match overrides
 
@@ -73,7 +73,7 @@ Open <http://your-homelab-ip:8000> in your browser.
 | Leaderboard | `/leaderboard` | Everyone |
 | Admin | `/admin` | Violin only |
 
-**Making a prediction:** click a radio button (Home / Draw / Away) on the Dashboard. The form auto-submits. You can change your pick any time until kick-off.
+**Making a prediction:** enter the exact score you expect (e.g. `2` – `1`) on the Dashboard and click **Predict**. You can change your prediction any time until kick-off.
 
 **Admin sync:** go to `/admin` and click **Sync Now** to pull the latest results immediately.
 
@@ -124,10 +124,16 @@ soccer-predictor/
 
 ## Scoring
 
+Predictions are graded by precision (the common 3 / 2 / 1 prediction standard):
+
 | Outcome | Points |
 |---------|--------|
-| Correct winner or draw | **5 pts** |
-| Wrong prediction | **0 pts** |
+| Exact score | **3 pts** |
+| Correct goal difference (or correct draw, wrong score) | **2 pts** |
+| Correct winner/draw only (wrong margin) | **1 pt** |
+| Wrong | **0 pts** |
+
+Example — you predict **2–1**: actual `2–1` → 3 pts, `3–2` or `1–0` → 2 pts, `4–1` → 1 pt, `1–1` → 0 pts.
 
 Points are awarded automatically when a match status becomes `FINISHED`.
 

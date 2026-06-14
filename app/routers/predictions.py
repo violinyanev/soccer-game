@@ -5,30 +5,34 @@ from sqlalchemy.exc import IntegrityError
 
 from auth import get_current_user
 from database import get_db
+from football_api import compute_result
 from models import Match, Prediction
 
 router = APIRouter()
 
-VALID_RESULTS = {"H", "A", "D"}
+MAX_GOALS = 99
 
 
 @router.post("/predictions")
 async def submit_prediction(
     request: Request,
     match_id: int = Form(...),
-    predicted_result: str = Form(...),
+    predicted_home: int = Form(...),
+    predicted_away: int = Form(...),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    if predicted_result not in VALID_RESULTS:
+    if not (0 <= predicted_home <= MAX_GOALS and 0 <= predicted_away <= MAX_GOALS):
         return RedirectResponse("/dashboard?error=invalid_prediction", status_code=302)
 
     match = db.query(Match).filter(Match.id == match_id).first()
     if not match or match.status != "SCHEDULED":
         return RedirectResponse("/dashboard?error=match_not_available", status_code=302)
+
+    predicted_result = compute_result(predicted_home, predicted_away)
 
     user_id = user["user_id"]
     existing = (
@@ -38,11 +42,15 @@ async def submit_prediction(
     )
 
     if existing:
+        existing.predicted_home = predicted_home
+        existing.predicted_away = predicted_away
         existing.predicted_result = predicted_result
     else:
         pred = Prediction(
             user_id=user_id,
             match_id=match_id,
+            predicted_home=predicted_home,
+            predicted_away=predicted_away,
             predicted_result=predicted_result,
         )
         db.add(pred)

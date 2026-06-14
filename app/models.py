@@ -40,7 +40,10 @@ class Prediction(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     match_id = Column(Integer, ForeignKey("matches.id"), nullable=False)
-    predicted_result = Column(String, nullable=False)  # H / A / D
+    # Players predict an exact scoreline; the tendency (H/A/D) is derived from it.
+    predicted_home = Column(Integer, nullable=True)
+    predicted_away = Column(Integer, nullable=True)
+    predicted_result = Column(String, nullable=True)  # H / A / D, derived from the scoreline
     points_awarded = Column(Integer, nullable=True)  # None until match finished
 
     user = relationship("User", back_populates="predictions")

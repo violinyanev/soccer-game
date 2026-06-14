@@ -27,3 +27,18 @@ def init_db():
     # Import models so Base knows about them before create_all
     import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    _migrate()
+
+
+def _migrate():
+    """Lightweight, idempotent schema migrations for existing databases.
+
+    create_all() never alters existing tables, so add columns introduced after
+    the first deploy by hand. Safe to run on every startup.
+    """
+    with engine.begin() as conn:
+        cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(predictions)")}
+        if "predicted_home" not in cols:
+            conn.exec_driver_sql("ALTER TABLE predictions ADD COLUMN predicted_home INTEGER")
+        if "predicted_away" not in cols:
+            conn.exec_driver_sql("ALTER TABLE predictions ADD COLUMN predicted_away INTEGER")

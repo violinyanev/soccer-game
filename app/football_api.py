@@ -16,7 +16,15 @@ logger = logging.getLogger(__name__)
 
 API_BASE = "https://api.football-data.org/v4"
 COMPETITION = "WC"
-POINTS_CORRECT = 5
+
+# Graded scoring (3 / 2 / 1) — the common international prediction standard:
+#   exact scoreline ............ 3
+#   correct goal difference .... 2  (also covers predicting the right draw)
+#   correct tendency only ...... 1  (right winner, wrong margin)
+#   wrong ...................... 0
+POINTS_EXACT = 3
+POINTS_DIFF = 2
+POINTS_TENDENCY = 1
 POINTS_WRONG = 0
 
 # Normalise the many status strings the API returns into our four buckets
@@ -61,7 +69,8 @@ def fetch_matches() -> list[dict]:
         return []
 
 
-def _compute_result(home: int | None, away: int | None) -> str | None:
+def compute_result(home: int | None, away: int | None) -> str | None:
+    """Match tendency: H (home win), A (away win), D (draw), or None if unknown."""
     if home is None or away is None:
         return None
     if home > away:
@@ -69,6 +78,19 @@ def _compute_result(home: int | None, away: int | None) -> str | None:
     if away > home:
         return "A"
     return "D"
+
+
+def score_prediction(pred_home, pred_away, actual_home, actual_away) -> int:
+    """Return graded points for a predicted scoreline vs. the actual result."""
+    if pred_home is None or pred_away is None or actual_home is None or actual_away is None:
+        return POINTS_WRONG
+    if pred_home == actual_home and pred_away == actual_away:
+        return POINTS_EXACT
+    if (pred_home - pred_away) == (actual_home - actual_away):
+        return POINTS_DIFF
+    if compute_result(pred_home, pred_away) == compute_result(actual_home, actual_away):
+        return POINTS_TENDENCY
+    return POINTS_WRONG
 
 
 def _parse_datetime(dt_str: str) -> datetime:
@@ -102,7 +124,7 @@ def sync_matches() -> dict:
             full_time = score.get("fullTime", {}) or {}
             home_score = full_time.get("home")
             away_score = full_time.get("away")
-            result = _compute_result(home_score, away_score) if status == "FINISHED" else None
+            result = compute_result(home_score, away_score) if status == "FINISHED" else None
 
             existing = db.query(Match).filter(Match.external_id == ext_id).first()
             if existing is None:
@@ -141,8 +163,8 @@ def sync_matches() -> dict:
                     .all()
                 )
                 for pred in preds:
-                    pred.points_awarded = (
-                        POINTS_CORRECT if pred.predicted_result == result else POINTS_WRONG
+                    pred.points_awarded = score_prediction(
+                        pred.predicted_home, pred.predicted_away, home_score, away_score
                     )
                     points_awarded += 1
 
