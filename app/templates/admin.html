@@ -23,6 +23,47 @@
   </form>
 </div>
 
+<!-- Player Participation -->
+<div class="card" style="padding:0; overflow:hidden;">
+  <div style="padding:1rem 1.25rem 0.5rem;">
+    <h3 style="margin:0;">👥 Player Predictions</h3>
+    <p style="color:#555; margin:0.35rem 0 0; font-size:0.9rem;">
+      Who has voted so far — {{ scheduled_count }} match{{ "es" if scheduled_count != 1 else "" }}
+      still open for predictions. (Actual picks are hidden to avoid spoilers.)
+    </p>
+  </div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+      <thead>
+        <tr style="background:#1a6e3c; color:#fff;">
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Player</th>
+          <th style="padding:0.5rem 0.75rem; text-align:right;">Predictions made</th>
+          <th style="padding:0.5rem 0.75rem; text-align:right;">Open matches left</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in participation %}
+        <tr style="{% if loop.index is even %}background:#f4f8f6;{% endif %}">
+          <td style="padding:0.45rem 0.75rem;">{{ p.username }}</td>
+          <td style="padding:0.45rem 0.75rem; text-align:right;">{{ p.predictions }}</td>
+          <td style="padding:0.45rem 0.75rem; text-align:right;">{{ p.open_remaining }}</td>
+          <td style="padding:0.45rem 0.75rem;">
+            {% if p.predictions == 0 %}
+              <span class="points-chip zero">Not voted</span>
+            {% elif p.open_remaining == 0 %}
+              <span class="points-chip earned">All done ✓</span>
+            {% else %}
+              <span class="points-chip pending">{{ p.open_remaining }} to go</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- Manual Match Add/Edit -->
 <div class="card">
   <h3 style="margin-bottom:0.5rem;">➕ Add / Edit a Match</h3>

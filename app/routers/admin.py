@@ -59,12 +59,44 @@ async def admin_get(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/dashboard", status_code=302)
 
     matches = db.query(Match).order_by(Match.match_datetime).all()
+
+    # Player participation: who has predicted, and how many open matches they
+    # still have left. Picks themselves are not shown, to avoid spoilers.
+    scheduled_ids = [m.id for m in matches if m.status == "SCHEDULED"]
+    scheduled_count = len(scheduled_ids)
+
+    total_counts = dict(
+        db.query(Prediction.user_id, func.count(Prediction.id))
+        .group_by(Prediction.user_id)
+        .all()
+    )
+    open_counts = {}
+    if scheduled_ids:
+        open_counts = dict(
+            db.query(Prediction.user_id, func.count(Prediction.id))
+            .filter(Prediction.match_id.in_(scheduled_ids))
+            .group_by(Prediction.user_id)
+            .all()
+        )
+
+    users = db.query(User).order_by(User.username).all()
+    participation = [
+        {
+            "username": u.username,
+            "predictions": total_counts.get(u.id, 0),
+            "open_remaining": scheduled_count - open_counts.get(u.id, 0),
+        }
+        for u in users
+    ]
+
     return templates.TemplateResponse(
         "admin.html",
         {
             "request": request,
             "user": admin,
             "matches": matches,
+            "participation": participation,
+            "scheduled_count": scheduled_count,
             "message": request.query_params.get("message"),
         },
     )
