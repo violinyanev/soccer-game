@@ -7,7 +7,7 @@ A self-hosted web app for family members to predict 2026 FIFA World Cup match ou
 - 8 predefined family accounts — no self-registration
 - First login sets your own password; subsequent logins use it
 - One-time welcome screen (in Bulgarian) with the player's photo on first login
-- Player photos shown wherever their name appears (leaderboard, predictions, nav)
+- Player photos shown wherever their name appears (leaderboard, predictions, nav); click one to open that player's profile — large photo, current score, and full history of started-match predictions with correctness
 - Predict the exact score of each match — voting closes at kick-off
 - Once a match starts, an expandable panel reveals what everyone predicted
 - Live scoreboard, grouped by date; matches older than 3 days collapse behind a toggle

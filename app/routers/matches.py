@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
@@ -151,3 +152,48 @@ async def welcome_ack(request: Request, db: Session = Depends(get_db)):
         db_user.has_seen_welcome = True
         db.commit()
     return RedirectResponse("/dashboard", status_code=302)
+
+
+@router.get("/player/{user_id}", response_class=HTMLResponse)
+async def player_profile(user_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    player = db.query(User).filter(User.id == user_id).first()
+    if not player:
+        return RedirectResponse("/dashboard", status_code=302)
+
+    now = datetime.utcnow()
+    total_points = (
+        db.query(func.coalesce(func.sum(Prediction.points_awarded), 0))
+        .filter(Prediction.user_id == user_id)
+        .scalar()
+    )
+
+    # All of this player's predictions on matches that have already started
+    # (newest first). Predictions on still-open matches are withheld (no spoilers).
+    rows = (
+        db.query(Prediction, Match)
+        .join(Match, Match.id == Prediction.match_id)
+        .filter(Prediction.user_id == user_id)
+        .order_by(Match.match_datetime.desc())
+        .all()
+    )
+    predictions = []
+    for pred, m in rows:
+        is_open = m.status == "SCHEDULED" and m.match_datetime > now
+        if is_open or pred.predicted_home is None:
+            continue
+        predictions.append({"match": m, "pred": pred})
+
+    return templates.TemplateResponse(
+        "profile.html",
+        {
+            "request": request,
+            "user": user,
+            "player": player,
+            "total_points": total_points,
+            "predictions": predictions,
+        },
+    )

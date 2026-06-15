@@ -1,5 +1,7 @@
-{# Reusable participant avatar. Falls back to a ⚽ disc when no photo is set. #}
-{% macro avatar(user_id, filename, username, size=28) %}
+{# Reusable participant avatar, linking to the player's profile. Falls back to a
+   ⚽ disc when no photo is set. Pass link=false to render without the anchor. #}
+{% macro avatar(user_id, filename, username, size=28, link=true) %}
+  {%- if link -%}<a href="/player/{{ user_id }}" title="{{ username }}'s profile" style="text-decoration:none;">{%- endif -%}
   {%- if filename -%}
     <img src="/avatar/{{ user_id }}" alt="{{ username }}" title="{{ username }}"
          style="width:{{ size }}px; height:{{ size }}px; border-radius:50%; object-fit:cover; vertical-align:middle;" />
@@ -9,4 +11,5 @@
                  width:{{ size }}px; height:{{ size }}px; border-radius:50%;
                  background:var(--brand-light); font-size:{{ (size * 0.55) | int }}px; vertical-align:middle;">⚽</span>
   {%- endif -%}
+  {%- if link -%}</a>{%- endif -%}
 {% endmacro %}

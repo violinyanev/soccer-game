@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ player.username }} — WC 2026 Predictor{% endblock %}
+
+{% block content %}
+
+<p style="margin-bottom:1rem;"><a href="/leaderboard" style="color:#1a6e3c;">← Back to leaderboard</a></p>
+
+<div class="card" style="text-align:center;">
+  {% if player.avatar_filename %}
+    <img src="/avatar/{{ player.id }}" alt="{{ player.username }}"
+         style="width:160px; height:160px; border-radius:50%; object-fit:cover;
+                border:4px solid var(--brand); margin-bottom:0.75rem;" />
+  {% else %}
+    <div style="width:160px; height:160px; border-radius:50%; margin:0 auto 0.75rem;
+                background:var(--brand-light); display:flex; align-items:center;
+                justify-content:center; font-size:4rem;">⚽</div>
+  {% endif %}
+
+  <h2 style="margin:0; color:var(--brand);">
+    {{ player.username }}
+    {% if player.username == user.sub %}<small style="color:#888;">(you)</small>{% endif %}
+  </h2>
+
+  <p style="margin:0.5rem 0 0; font-size:1.1rem;">
+    Current score: <strong style="font-size:1.6rem; color:var(--brand);">{{ total_points }}</strong>
+    <small style="color:#888;">pts</small>
+  </p>
+</div>
+
+<h3 style="margin:1.5rem 0 0.75rem;">📜 Past predictions ({{ predictions | length }})</h3>
+
+{% if not predictions %}
+<div class="card" style="text-align:center; color:#888;">No predictions on started matches yet.</div>
+{% else %}
+<div class="card" style="padding:0; overflow:hidden;">
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+      <thead>
+        <tr style="background:#1a6e3c; color:#fff;">
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Match</th>
+          <th style="padding:0.5rem 0.75rem; text-align:center;">Final</th>
+          <th style="padding:0.5rem 0.75rem; text-align:center;">Predicted</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in predictions %}
+        {% set m = p.match %}
+        {% set pr = p.pred %}
+        <tr style="{% if loop.index is even %}background:#f4f8f6;{% endif %}">
+          <td style="padding:0.45rem 0.75rem;">
+            {{ m.home_team }} vs {{ m.away_team }}
+            <br/><small style="color:#999;">{{ m.match_datetime.strftime("%Y-%m-%d") }}</small>
+          </td>
+          <td style="padding:0.45rem 0.75rem; text-align:center; white-space:nowrap;">
+            {% if m.status == "FINISHED" and m.home_score is not none %}{{ m.home_score }} – {{ m.away_score }}{% else %}—{% endif %}
+          </td>
+          <td style="padding:0.45rem 0.75rem; text-align:center; white-space:nowrap;">
+            <strong>{{ pr.predicted_home }} – {{ pr.predicted_away }}</strong>
+          </td>
+          <td style="padding:0.45rem 0.75rem;">
+            {% if m.status == "FINISHED" and pr.points_awarded is not none %}
+              {% if pr.points_awarded == 3 %}
+                <span class="points-chip earned">Exact ⭐ (+3)</span>
+              {% elif pr.points_awarded == 2 %}
+                <span class="points-chip earned">Goal difference (+2)</span>
+              {% elif pr.points_awarded == 1 %}
+                <span class="points-chip earned">Right winner (+1)</span>
+              {% else %}
+                <span class="points-chip zero">Wrong (+0)</span>
+              {% endif %}
+            {% else %}
+              <span class="points-chip pending">Pending</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

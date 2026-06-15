@@ -154,9 +154,11 @@
   {% if user.is_admin %}
   <a href="/admin">🛠 Admin</a>
   {% endif %}
-  <img src="/avatar/{{ user.user_id }}" alt=""
-       style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid rgba(255,255,255,0.5);"
-       onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'⚽',style:'font-size:1.2rem'}))" />
+  <a href="/player/{{ user.user_id }}" title="My profile">
+    <img src="/avatar/{{ user.user_id }}" alt=""
+         style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid rgba(255,255,255,0.5); display:block;"
+         onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'⚽',style:'font-size:1.2rem'}))" />
+  </a>
   <form method="post" action="/logout">
     <button class="logout-btn" type="submit">Logout ({{ user.sub }})</button>
   </form>
