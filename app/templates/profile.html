@@ -8,8 +8,19 @@
 <div class="card" style="text-align:center;">
   {% if player.avatar_filename %}
     <img src="/avatar/{{ player.id }}" alt="{{ player.username }}"
+         onclick="document.getElementById('lightbox').style.display='flex'"
+         title="Click to view full size"
          style="width:160px; height:160px; border-radius:50%; object-fit:cover;
-                border:4px solid var(--brand); margin-bottom:0.75rem;" />
+                border:4px solid var(--brand); margin-bottom:0.75rem; cursor:zoom-in;" />
+
+    {# Full-size overlay — click anywhere (or press Esc) to close #}
+    <div id="lightbox" onclick="this.style.display='none'"
+         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+                align-items:center; justify-content:center; z-index:1000; cursor:zoom-out;">
+      <img src="/avatar/{{ player.id }}" alt="{{ player.username }}"
+           style="max-width:95vw; max-height:95vh; object-fit:contain;
+                  border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.5);" />
+    </div>
   {% else %}
     <div style="width:160px; height:160px; border-radius:50%; margin:0 auto 0.75rem;
                 background:var(--brand-light); display:flex; align-items:center;
@@ -79,6 +90,17 @@
     </table>
   </div>
 </div>
+{% endif %}
+
+{% if player.avatar_filename %}
+<script>
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var lb = document.getElementById('lightbox');
+      if (lb) lb.style.display = 'none';
+    }
+  });
+</script>
 {% endif %}
 
 {% endblock %}
