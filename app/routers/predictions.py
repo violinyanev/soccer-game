@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -29,7 +31,8 @@ async def submit_prediction(
         return RedirectResponse("/dashboard?error=invalid_prediction", status_code=302)
 
     match = db.query(Match).filter(Match.id == match_id).first()
-    if not match or match.status != "SCHEDULED":
+    # Reject if the match doesn't exist, isn't scheduled, or has already kicked off.
+    if not match or match.status != "SCHEDULED" or match.match_datetime <= datetime.utcnow():
         return RedirectResponse("/dashboard?error=match_not_available", status_code=302)
 
     predicted_result = compute_result(predicted_home, predicted_away)

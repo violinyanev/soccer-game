@@ -46,7 +46,9 @@ async def leaderboard(request: Request, db: Session = Depends(get_db)):
 
     rows = (
         db.query(
+            User.id.label("user_id"),
             User.username,
+            User.avatar_filename.label("avatar"),
             total_pts_expr.label("total_points"),
             correct_expr.label("correct_predictions"),
         )

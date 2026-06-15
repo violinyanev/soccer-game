@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import avatar %}
 {% block title %}⚽ Dashboard — WC 2026 Predictor{% endblock %}
 
 {% block content %}
@@ -76,6 +77,7 @@
     <div class="pred-row" style="margin-top:0.75rem;">
       {% if pred and pred.predicted_home is not none %}
         <span class="pred-label locked selected">
+          {{ avatar(user.user_id, me.avatar_filename, user.sub, 22) }}
           Your prediction: <strong>{{ pred.predicted_home }} – {{ pred.predicted_away }}</strong>
         </span>
 
@@ -92,13 +94,38 @@
         <span style="color:#999; font-size:0.85rem;">No prediction made</span>
       {% endif %}
     </div>
+
+    {# Everyone's predictions — revealed once the match is locked #}
+    {% if entry.others %}
+    <details style="margin-top:0.6rem;">
+      <summary style="cursor:pointer; font-size:0.85rem; color:#1a6e3c; user-select:none;">
+        👥 Everyone's predictions ({{ entry.others | length }})
+      </summary>
+      <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.35rem;">
+        {% for o in entry.others %}
+        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem;">
+          {{ avatar(o.user_id, o.avatar, o.username, 24) }}
+          <span style="min-width:6rem;">{{ o.username }}</span>
+          <strong>{{ o.predicted_home }} – {{ o.predicted_away }}</strong>
+          {% if o.points_awarded is not none %}
+            {% if o.points_awarded > 0 %}
+              <span class="points-chip earned">+{{ o.points_awarded }}</span>
+            {% else %}
+              <span class="points-chip zero">+0</span>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
   {% endif %}
 
 </div>
 {% endfor %}
 {% endmacro %}
 
-{% if not upcoming_groups and not past_groups %}
+{% if not visible_groups and not old_groups %}
 <div class="card" style="text-align:center; color:#666;">
   <p style="font-size:1.5rem; margin-bottom:0.5rem;">📭</p>
   <p>No matches loaded yet. The admin can trigger a sync from the
@@ -107,20 +134,20 @@
 </div>
 {% endif %}
 
-{# Upcoming / current matches #}
-{% for date, entries in upcoming_groups %}
+{# Recent (last 3 days) and upcoming matches #}
+{% for date, entries in visible_groups %}
   {{ render_group(date, entries) }}
 {% endfor %}
 
-{# Past matches — collapsed behind a toggle #}
-{% if past_groups %}
+{# Matches older than 3 days — collapsed behind a toggle #}
+{% if old_groups %}
 <details style="margin-top:1.75rem;">
   <summary style="cursor:pointer; padding:0.6rem 1rem; background:#e8f5ee; color:#1a6e3c;
                   border-radius:8px; font-weight:600; list-style:none; user-select:none;">
-    🗂️ Past matches ({{ past_match_count }}) — click to show / hide
+    🗂️ Older matches ({{ old_match_count }}) — click to show / hide
   </summary>
   <div style="margin-top:1rem;">
-    {% for date, entries in past_groups %}
+    {% for date, entries in old_groups %}
       {{ render_group(date, entries) }}
     {% endfor %}
   </div>

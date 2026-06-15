@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import avatar %}
 {% block title %}🏆 Leaderboard — WC 2026 Predictor{% endblock %}
 
 {% block content %}
@@ -30,7 +31,8 @@
           {% endif %}
         </td>
         <td>
-          {{ row.username }}
+          {{ avatar(row.user_id, row.avatar, row.username, 30) }}
+          <span style="margin-left:0.5rem; vertical-align:middle;">{{ row.username }}</span>
           {% if row.username == user.sub %}<small style="color:#1a6e3c;">(you)</small>{% endif %}
         </td>
         <td style="text-align:right;">{{ row.correct_predictions }}</td>
