@@ -154,4 +154,35 @@
 </details>
 {% endif %}
 
+<script>
+  // Submit predictions without reloading the page (so it doesn't jump to the top).
+  document.querySelectorAll('form[action="/predictions"]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = form.querySelector('button[type=submit]');
+      var original = btn.textContent.trim();
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      fetch('/predictions', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'fetch' },
+        body: new URLSearchParams(new FormData(form))
+      }).then(function (r) {
+        btn.disabled = false;
+        if (r.ok) {
+          btn.textContent = 'Saved ✓';
+          setTimeout(function () { btn.textContent = 'Update'; }, 1500);
+        } else {
+          btn.textContent = '✗ Try again';
+          setTimeout(function () { btn.textContent = original; }, 2000);
+        }
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = '✗ Try again';
+        setTimeout(function () { btn.textContent = original; }, 2000);
+      });
+    });
+  });
+</script>
+
 {% endblock %}

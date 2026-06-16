@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -15,6 +15,10 @@ router = APIRouter()
 MAX_GOALS = 99
 
 
+def _is_ajax(request: Request) -> bool:
+    return request.headers.get("x-requested-with") == "fetch"
+
+
 @router.post("/predictions")
 async def submit_prediction(
     request: Request,
@@ -23,17 +27,25 @@ async def submit_prediction(
     predicted_away: int = Form(...),
     db: Session = Depends(get_db),
 ):
+    ajax = _is_ajax(request)
+
+    def fail(status: int, code: str, redirect: str):
+        # AJAX callers get a small JSON error; plain form posts get a redirect.
+        if ajax:
+            return JSONResponse({"error": code}, status_code=status)
+        return RedirectResponse(redirect, status_code=302)
+
     user = get_current_user(request)
     if not user:
-        return RedirectResponse("/login", status_code=302)
+        return fail(401, "not_authenticated", "/login")
 
     if not (0 <= predicted_home <= MAX_GOALS and 0 <= predicted_away <= MAX_GOALS):
-        return RedirectResponse("/dashboard?error=invalid_prediction", status_code=302)
+        return fail(400, "invalid_prediction", "/dashboard?error=invalid_prediction")
 
     match = db.query(Match).filter(Match.id == match_id).first()
     # Reject if the match doesn't exist, isn't scheduled, or has already kicked off.
     if not match or match.status != "SCHEDULED" or match.match_datetime <= datetime.utcnow():
-        return RedirectResponse("/dashboard?error=match_not_available", status_code=302)
+        return fail(409, "match_not_available", "/dashboard?error=match_not_available")
 
     predicted_result = compute_result(predicted_home, predicted_away)
 
@@ -63,4 +75,6 @@ async def submit_prediction(
     except IntegrityError:
         db.rollback()
 
+    if ajax:
+        return Response(status_code=204)
     return RedirectResponse("/dashboard", status_code=302)
