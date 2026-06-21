@@ -43,6 +43,7 @@
           <th style="padding:0.5rem 0.75rem; text-align:right;">Open left</th>
           <th style="padding:0.5rem 0.75rem; text-align:left;">Status</th>
           <th style="padding:0.5rem 0.75rem; text-align:left;">Picture</th>
+          <th style="padding:0.5rem 0.75rem; text-align:left;">Password</th>
         </tr>
       </thead>
       <tbody>
@@ -76,6 +77,15 @@
                      required style="font-size:0.8rem; max-width:170px;" />
               <button type="submit" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#1a6e3c; border-color:#1a6e3c; color:#fff; border-radius:5px; cursor:pointer;">
                 {% if p.avatar %}Replace{% else %}Upload{% endif %}
+              </button>
+            </form>
+          </td>
+          <td style="padding:0.45rem 0.75rem;">
+            <form method="post" action="/admin/reset-password" style="margin:0;"
+                  onsubmit="return confirm('Reset {{ p.username }}\'s password? They will set a new one at next login. Other data is kept.');">
+              <input type="hidden" name="user_id" value="{{ p.user_id }}" />
+              <button type="submit" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:#b02a37; border-color:#b02a37; color:#fff; border-radius:5px; cursor:pointer;">
+                Reset
               </button>
             </form>
           </td>

@@ -259,3 +259,28 @@ async def admin_upload_avatar(
     return RedirectResponse(
         f"/admin?message=Picture+updated+for+{user.username}", status_code=302
     )
+
+
+@router.post("/admin/reset-password")
+async def admin_reset_password(
+    request: Request,
+    user_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    admin = _require_admin(request)
+    if not admin:
+        return RedirectResponse("/dashboard", status_code=302)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return RedirectResponse("/admin?message=Unknown+user", status_code=302)
+
+    # Clearing the hash puts the account back into the "not yet set" state, so the
+    # normal first-login flow prompts them to choose a new password. Nothing else
+    # (predictions, avatar, score) is touched.
+    user.password_hash = None
+    db.commit()
+    return RedirectResponse(
+        f"/admin?message=Password+reset+for+{user.username}+—+they+set+a+new+one+at+next+login",
+        status_code=302,
+    )
