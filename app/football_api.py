@@ -152,21 +152,25 @@ def sync_matches() -> dict:
                 match = existing
                 updated += 1
 
-            # Award points for FINISHED matches with a known result
+            # (Re)score every prediction for FINISHED matches with a known
+            # result. We recompute on every sync — not only when points are
+            # still unset — so a corrected final score (e.g. after extra time,
+            # or a data fix from the API) updates points that were awarded
+            # against an earlier, provisional scoreline instead of freezing the
+            # first value forever.
             if status == "FINISHED" and result:
                 preds = (
                     db.query(Prediction)
-                    .filter(
-                        Prediction.match_id == match.id,
-                        Prediction.points_awarded.is_(None),
-                    )
+                    .filter(Prediction.match_id == match.id)
                     .all()
                 )
                 for pred in preds:
-                    pred.points_awarded = score_prediction(
+                    new_points = score_prediction(
                         pred.predicted_home, pred.predicted_away, home_score, away_score
                     )
-                    points_awarded += 1
+                    if pred.points_awarded != new_points:
+                        pred.points_awarded = new_points
+                        points_awarded += 1
 
         db.commit()
         summary = {
