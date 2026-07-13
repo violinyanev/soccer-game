@@ -23,6 +23,22 @@
   </form>
 </div>
 
+<!-- Dice Roll -->
+<div class="card">
+  <h3 style="margin-bottom:0.5rem;">🎲 Dice Roll — Fill Missing Past Predictions</h3>
+  <p style="color:#555; margin-bottom:1rem; font-size:0.9rem;">
+    For every finished match, anyone who did not submit a prediction gets one assigned automatically.
+    A single voter is chosen at random per match, and their exact scoreline is copied to all
+    non-voters for that match. Points are awarded immediately based on the actual result.
+  </p>
+  <form method="post" action="/admin/dice-roll"
+        onsubmit="return confirm('Roll the dice? Every player who skipped a finished match will get the same random guess as one of their fellow players. This cannot be undone.');">
+    <button type="submit" style="background:#7b3f00; border-color:#7b3f00; color:#fff; padding:0.5rem 1.25rem; border-radius:6px; cursor:pointer; font-size:0.95rem;">
+      🎲 Roll the Dice
+    </button>
+  </form>
+</div>
+
 <!-- Player Participation -->
 <div class="card" style="padding:0; overflow:hidden;">
   <div style="padding:1rem 1.25rem 0.5rem;">

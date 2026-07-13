@@ -79,6 +79,7 @@
         <span class="pred-label locked selected">
           {{ avatar(user.user_id, me.avatar_filename, user.sub, 22) }}
           Your prediction: <strong>{{ pred.predicted_home }} – {{ pred.predicted_away }}</strong>
+          {% if pred.is_auto %}<span title="Auto-filled by dice roll" style="font-size:0.8rem; margin-left:0.25rem;">🤖</span>{% endif %}
         </span>
 
         {% if pred.points_awarded is not none %}
@@ -107,6 +108,7 @@
           {{ avatar(o.user_id, o.avatar, o.username, 24) }}
           <span style="min-width:6rem;">{{ o.username }}</span>
           <strong>{{ o.predicted_home }} – {{ o.predicted_away }}</strong>
+          {% if o.is_auto %}<span title="Auto-filled by dice roll" style="font-size:0.8rem;">🤖</span>{% endif %}
           {% if o.points_awarded is not none %}
             {% if o.points_awarded > 0 %}
               <span class="points-chip earned">+{{ o.points_awarded }}</span>

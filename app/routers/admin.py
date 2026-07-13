@@ -1,4 +1,5 @@
 import os
+import random
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
@@ -38,11 +39,25 @@ async def leaderboard(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # Aggregate points and correct predictions per user
-    correct_expr = func.sum(
-        case((Prediction.points_awarded > 0, 1), else_=0)
-    )
-    total_pts_expr = func.coalesce(func.sum(Prediction.points_awarded), 0)
+    exclude_ai = request.query_params.get("exclude_ai") == "1"
+
+    if exclude_ai:
+        # Conditionally sum only non-auto predictions, keeping all users in view.
+        total_pts_expr = func.coalesce(
+            func.sum(case((Prediction.is_auto == False, Prediction.points_awarded), else_=None)),
+            0,
+        )
+        correct_expr = func.sum(
+            case(
+                ((Prediction.is_auto == False) & (Prediction.points_awarded > 0), 1),
+                else_=0,
+            )
+        )
+    else:
+        total_pts_expr = func.coalesce(func.sum(Prediction.points_awarded), 0)
+        correct_expr = func.sum(
+            case((Prediction.points_awarded > 0, 1), else_=0)
+        )
 
     rows = (
         db.query(
@@ -60,7 +75,7 @@ async def leaderboard(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse(
         "leaderboard.html",
-        {"request": request, "user": user, "rows": rows},
+        {"request": request, "user": user, "rows": rows, "exclude_ai": exclude_ai},
     )
 
 
@@ -284,3 +299,61 @@ async def admin_reset_password(
         f"/admin?message=Password+reset+for+{user.username}+—+they+set+a+new+one+at+next+login",
         status_code=302,
     )
+
+
+@router.post("/admin/dice-roll")
+async def admin_dice_roll(request: Request, db: Session = Depends(get_db)):
+    admin = _require_admin(request)
+    if not admin:
+        return RedirectResponse("/dashboard", status_code=302)
+
+    all_user_ids = {u.id for u in db.query(User.id).all()}
+
+    finished_matches = (
+        db.query(Match)
+        .filter(Match.status == "FINISHED", Match.result.isnot(None))
+        .all()
+    )
+
+    total_filled = 0
+    matches_affected = 0
+
+    for match in finished_matches:
+        existing_preds = (
+            db.query(Prediction)
+            .filter(Prediction.match_id == match.id)
+            .all()
+        )
+
+        voted_user_ids = {p.user_id for p in existing_preds}
+        non_voters = all_user_ids - voted_user_ids
+
+        if not existing_preds or not non_voters:
+            continue
+
+        picked = random.choice(existing_preds)
+
+        for user_id in non_voters:
+            points = score_prediction(
+                picked.predicted_home, picked.predicted_away,
+                match.home_score, match.away_score,
+            )
+            db.add(Prediction(
+                user_id=user_id,
+                match_id=match.id,
+                predicted_home=picked.predicted_home,
+                predicted_away=picked.predicted_away,
+                predicted_result=picked.predicted_result,
+                points_awarded=points,
+                is_auto=True,
+            ))
+            total_filled += 1
+
+        matches_affected += 1
+
+    db.commit()
+    msg = (
+        f"Dice rolled — filled {total_filled} missing prediction(s) "
+        f"across {matches_affected} past match(es)."
+    )
+    return RedirectResponse(f"/admin?message={msg}", status_code=302)
