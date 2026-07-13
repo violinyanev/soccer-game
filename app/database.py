@@ -47,6 +47,10 @@ def _migrate():
             conn.exec_driver_sql("ALTER TABLE predictions ADD COLUMN predicted_home INTEGER")
         if "predicted_away" not in pred_cols:
             conn.exec_driver_sql("ALTER TABLE predictions ADD COLUMN predicted_away INTEGER")
+        if "is_auto" not in pred_cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE predictions ADD COLUMN is_auto BOOLEAN NOT NULL DEFAULT 0"
+            )
 
         user_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)")}
         if "avatar_filename" not in user_cols:

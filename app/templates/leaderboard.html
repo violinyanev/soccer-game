@@ -4,7 +4,23 @@
 
 {% block content %}
 
-<h2 style="margin-bottom:1.25rem;">🏆 Leaderboard</h2>
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
+  <h2 style="margin:0;">🏆 Leaderboard</h2>
+  {% if exclude_ai %}
+    <a href="/leaderboard" style="padding:0.35rem 0.9rem; font-size:0.85rem; background:#1a6e3c; color:#fff; border-radius:6px; text-decoration:none; white-space:nowrap;">
+      🤖 Show with AI rolls
+    </a>
+  {% else %}
+    <a href="/leaderboard?exclude_ai=1" style="padding:0.35rem 0.9rem; font-size:0.85rem; background:#555; color:#fff; border-radius:6px; text-decoration:none; white-space:nowrap;">
+      🚫🤖 Hide AI rolls
+    </a>
+  {% endif %}
+</div>
+{% if exclude_ai %}
+<p style="color:#888; font-size:0.85rem; margin-bottom:0.75rem;">
+  Showing points from <strong>manual predictions only</strong> — auto-filled dice-roll guesses are excluded.
+</p>
+{% endif %}
 
 <div class="card" style="padding:0; overflow:hidden;">
   <table class="leaderboard">

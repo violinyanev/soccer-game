@@ -49,6 +49,7 @@ class Prediction(Base):
     predicted_away = Column(Integer, nullable=True)
     predicted_result = Column(String, nullable=True)  # H / A / D, derived from the scoreline
     points_awarded = Column(Integer, nullable=True)  # None until match finished
+    is_auto = Column(Boolean, default=False, nullable=False)
 
     user = relationship("User", back_populates="predictions")
     match = relationship("Match", back_populates="predictions")

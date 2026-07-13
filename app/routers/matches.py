@@ -79,6 +79,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
                     "predicted_home": pred.predicted_home,
                     "predicted_away": pred.predicted_away,
                     "points_awarded": pred.points_awarded,
+                    "is_auto": pred.is_auto,
                 }
             )
 
